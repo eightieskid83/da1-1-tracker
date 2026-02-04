@@ -1,5 +1,6 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -19,3 +20,23 @@ def init_db(app):
 
     with app.app_context():
         db.create_all()
+
+        # Create default admin user if no users exist
+        from models import User
+        if User.query.count() == 0:
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                forename='Admin',
+                surname='User',
+                job_title='Administrator',
+                telephone=None,
+                user_created_date=datetime.now(),
+                is_active=True,
+                role='admin',
+                approval_status='approved'
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Default admin user created (admin/admin123)")
