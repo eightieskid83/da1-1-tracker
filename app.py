@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
@@ -42,15 +43,15 @@ STATUS_OPTIONS = [
 ]
 
 app = Flask(__name__)
-app.secret_key = 'da11-tracker-secret-key-change-in-production'
+app.secret_key = os.environ.get('SECRET_KEY', 'da11-tracker-secret-key-change-in-production')
 
 # Flask-Mail configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@gmail.com'  # Change this
-app.config['MAIL_PASSWORD'] = 'your-app-password'     # Change this
-app.config['MAIL_DEFAULT_SENDER'] = 'your-email@gmail.com'  # Change this
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
 
 # Initialize extensions
 init_db(app)
