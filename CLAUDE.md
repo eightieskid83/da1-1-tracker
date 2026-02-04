@@ -66,6 +66,7 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
   - Uses `DATABASE_URL` environment variable for PostgreSQL (production)
   - Falls back to `sqlite:///da11_tracker.db` for local development
   - Handles Render's `postgres://` to `postgresql://` URL conversion
+  - Auto-creates default admin user on first run if no users exist
 - **migrate_add_approval_status.py** - Adds `approval_status` column and backfills existing users to `'approved'`. Run once: `python migrate_add_approval_status.py`
 
 ### Routes
@@ -98,6 +99,7 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
 | Route | Description |
 |-------|-------------|
 | `/profile/update` | Update user profile (POST) - forename, surname, email, job_title, telephone |
+| `/profile/change-password` | Change password (POST) - requires current password, new password must be 8+ chars |
 | `/profile/delete` | Delete account (soft delete with email confirmation) (POST) |
 
 #### Admin Notification Routes
@@ -127,9 +129,9 @@ The `/records` route supports filtering via query parameters:
 
 All templates extend `base.html` which includes Bootstrap 5.3, Plus Jakarta Sans font, and navbar with user dropdown menu. Custom styling in `static/style.css` uses brand colors: navbar `#0d004d`, table headers `#512eab`, background `#edecf6`, filter modal header `#0d004d`, date range filter band `#512eab`, warning buttons `#FFCE00`.
 
-**Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Delete Account, and Logout options. Admin users also see a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
+**Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Change Password, Delete Account, and Logout options. Admin users also see a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
 
-**Profile Modals**: Edit Profile modal allows users to update their details. Delete Account modal includes confirmation and sends email notification upon deletion.
+**Profile Modals**: Edit Profile modal allows users to update their details. Change Password modal requires current password validation and new password confirmation (minimum 8 characters). Delete Account modal includes confirmation and sends email notification upon deletion.
 
 **Approval Modal** (admin only): Opens from a notification dropdown item. Displays the pending user's name, email, and registration date. Accept sends the activation email and sets `approval_status='approved'`; Reject sends a rejection email and sets `approval_status='rejected'`. The notification disappears from the dropdown on either outcome.
 
