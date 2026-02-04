@@ -19,11 +19,11 @@
         {% endif %}
     </div>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-filter" data-bs-toggle="modal" data-bs-target="#filterModal">
+        <button type="button" class="btn btn-secondary-unified" data-bs-toggle="modal" data-bs-target="#filterModal" aria-label="Open filters">
             Filters
         </button>
         <div class="dropdown">
-            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-secondary-unified dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Export options">
                 Export
             </button>
             <ul class="dropdown-menu">
@@ -32,25 +32,28 @@
                 <li><a class="dropdown-item" href="{{ url_for('export_csv') }}">CSV</a></li>
             </ul>
         </div>
-        <button type="button" class="btn btn-upload"
+        <button type="button" class="btn btn-primary-unified"
                 {% if not current_user.is_admin() %}disabled{% endif %}
                 {% if current_user.is_admin() %}data-bs-toggle="modal" data-bs-target="#uploadModal"{% endif %}
                 {% if not current_user.is_admin() %}data-bs-toggle="tooltip" data-bs-placement="bottom"
-                title="Admin access required to access these features, please contact local administrator."{% endif %}>
+                title="Admin access required to access these features, please contact local administrator."{% endif %}
+                aria-label="Upload records">
             Upload
         </button>
 
         <a href="{{ url_for('add_record') }}"
-           class="btn btn-success {% if not current_user.is_admin() %}disabled{% endif %}"
+           class="btn btn-primary-unified {% if not current_user.is_admin() %}disabled{% endif %}"
            {% if not current_user.is_admin() %}data-bs-toggle="tooltip" data-bs-placement="bottom"
            title="Admin access required to access these features, please contact local administrator."
-           aria-disabled="true" onclick="event.preventDefault();"{% endif %}>
+           aria-disabled="true" onclick="event.preventDefault();"{% endif %}
+           aria-label="Add new record">
             Add New Record
         </a>
         {% if current_user.is_admin() %}
-        <button type="button" class="btn btn-danger" id="bulkDeleteBtn"
+        <button type="button" class="btn btn-destructive" id="bulkDeleteBtn"
                 style="display: none;" data-bs-toggle="modal"
-                data-bs-target="#bulkDeleteModal">
+                data-bs-target="#bulkDeleteModal"
+                aria-label="Delete selected records">
             Delete Selected (<span id="selectedCount">0</span>)
         </button>
         {% endif %}
@@ -58,42 +61,140 @@
 </div>
 
 {% if records %}
-<div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                {% if current_user.is_admin() %}
-                <th><input type="checkbox" id="selectAllCheckbox"></th>
-                {% endif %}
-                <th>ACE360 ID</th>
-                <th>Status</th>
-                <th>Gateway Submitted</th>
-                <th>EPA Ready Date</th>
-                <th>EPA Window Closure</th>
-                <th>Project Start</th>
-                <th>Project Deadline</th>
-                <th>First Attempt</th>
-                <th>Variance (Days)</th>
-                <th>Overall Grade</th>
-                <th>EPA Completed within SLA</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+<!-- Quick Filters -->
+<div class="quick-filters" id="quickFilters" role="group" aria-label="Quick filters">
+    <div class="quick-filter-group">
+        <span class="quick-filter-label">Status:</span>
+        <select class="quick-filter-select {% if active_filters.get('status') %}has-value{% endif %}"
+                id="quickStatusFilter"
+                aria-label="Filter by status">
+            <option value="">All</option>
+            <option value="In Training" {% if active_filters.get('status') == 'In Training' %}selected{% endif %}>In Training</option>
+            <option value="Gateway in Progress" {% if active_filters.get('status') == 'Gateway in Progress' %}selected{% endif %}>Gateway in Progress</option>
+            <option value="Gateway Evidence Complete" {% if active_filters.get('status') == 'Gateway Evidence Complete' %}selected{% endif %}>Gateway Evidence Complete</option>
+            <option value="Gateway Submitted" {% if active_filters.get('status') == 'Gateway Submitted' %}selected{% endif %}>Gateway Submitted</option>
+            <option value="Denied EPA" {% if active_filters.get('status') == 'Denied EPA' %}selected{% endif %}>Denied EPA</option>
+            <option value="Approved for EPA" {% if active_filters.get('status') == 'Approved for EPA' %}selected{% endif %}>Approved for EPA</option>
+            <option value="EPA in Progress" {% if active_filters.get('status') == 'EPA in Progress' %}selected{% endif %}>EPA in Progress</option>
+            <option value="EPA Evidence Complete" {% if active_filters.get('status') == 'EPA Evidence Complete' %}selected{% endif %}>EPA Evidence Complete</option>
+            <option value="EPA Failed" {% if active_filters.get('status') == 'EPA Failed' %}selected{% endif %}>EPA Failed</option>
+            <option value="EPA Passed" {% if active_filters.get('status') == 'EPA Passed' %}selected{% endif %}>EPA Passed</option>
+        </select>
+    </div>
+
+    <div class="quick-filters-divider"></div>
+
+    <div class="quick-filter-group">
+        <span class="quick-filter-label">Grade:</span>
+        <div class="quick-filter-chips" role="group" aria-label="Filter by grade">
+            <button type="button" class="filter-chip {% if not active_filters.get('grade') %}active{% endif %}" data-filter="grade" data-value="" aria-pressed="{% if not active_filters.get('grade') %}true{% else %}false{% endif %}">All</button>
+            <button type="button" class="filter-chip {% if active_filters.get('grade') == 'Distinction' %}active{% endif %}" data-filter="grade" data-value="Distinction" aria-pressed="{% if active_filters.get('grade') == 'Distinction' %}true{% else %}false{% endif %}">Distinction</button>
+            <button type="button" class="filter-chip {% if active_filters.get('grade') == 'Merit' %}active{% endif %}" data-filter="grade" data-value="Merit" aria-pressed="{% if active_filters.get('grade') == 'Merit' %}true{% else %}false{% endif %}">Merit</button>
+            <button type="button" class="filter-chip {% if active_filters.get('grade') == 'Pass' %}active{% endif %}" data-filter="grade" data-value="Pass" aria-pressed="{% if active_filters.get('grade') == 'Pass' %}true{% else %}false{% endif %}">Pass</button>
+            <button type="button" class="filter-chip {% if active_filters.get('grade') == 'Fail' %}active{% endif %}" data-filter="grade" data-value="Fail" aria-pressed="{% if active_filters.get('grade') == 'Fail' %}true{% else %}false{% endif %}">Fail</button>
+        </div>
+    </div>
+
+    <div class="quick-filters-divider"></div>
+
+    <div class="quick-filter-group">
+        <span class="quick-filter-label">EPA SLA:</span>
+        <div class="quick-filter-chips" role="group" aria-label="Filter by EPA SLA">
+            <button type="button" class="filter-chip {% if not active_filters.get('window') %}active{% endif %}" data-filter="window" data-value="" aria-pressed="{% if not active_filters.get('window') %}true{% else %}false{% endif %}">All</button>
+            <button type="button" class="filter-chip {% if active_filters.get('window') == 'Yes' %}active{% endif %}" data-filter="window" data-value="Yes" aria-pressed="{% if active_filters.get('window') == 'Yes' %}true{% else %}false{% endif %}">Yes</button>
+            <button type="button" class="filter-chip {% if active_filters.get('window') == 'No' %}active{% endif %}" data-filter="window" data-value="No" aria-pressed="{% if active_filters.get('window') == 'No' %}true{% else %}false{% endif %}">No</button>
+        </div>
+    </div>
+
+    <div class="quick-filters-divider"></div>
+
+    <a href="#" class="quick-filter-advanced-link" data-bs-toggle="modal" data-bs-target="#filterModal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        Date Filters...
+    </a>
+</div>
+
+<div class="table-scroll-container">
+    <div class="table-responsive" id="tableScrollArea">
+        <table class="table table-striped table-hover" id="recordsTable">
+            <thead>
+                <tr>
+                    {% if current_user.is_admin() %}
+                    <th><input type="checkbox" id="selectAllCheckbox" aria-label="Select all records"></th>
+                    {% endif %}
+                    <th class="sortable" data-sort="ace360_id" data-type="number" tabindex="0" role="columnheader" aria-sort="none">ACE360 ID<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="status" data-type="string" tabindex="0" role="columnheader" aria-sort="none">Status<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="gateway_submitted" data-type="date" tabindex="0" role="columnheader" aria-sort="none">Gateway Submitted<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="epa_ready" data-type="date" tabindex="0" role="columnheader" aria-sort="none">EPA Ready Date<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="epa_closure" data-type="date" tabindex="0" role="columnheader" aria-sort="none">EPA Window Closure<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="project_start" data-type="date" tabindex="0" role="columnheader" aria-sort="none">Project Start<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="project_deadline" data-type="date" tabindex="0" role="columnheader" aria-sort="none">Project Deadline<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="first_attempt" data-type="date" tabindex="0" role="columnheader" aria-sort="none">First Attempt<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="variance" data-type="number" tabindex="0" role="columnheader" aria-sort="none">Variance (Days)<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="grade" data-type="grade" tabindex="0" role="columnheader" aria-sort="none">Overall Grade<span class="sort-indicator">▲▼</span></th>
+                    <th class="sortable" data-sort="sla" data-type="string" tabindex="0" role="columnheader" aria-sort="none">EPA Completed within SLA<span class="sort-indicator">▲▼</span></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
         <tbody>
             {% for record in records %}
-            <tr>
+            <tr data-record-id="{{ record.id }}" class="expandable-row" role="button" tabindex="0" aria-expanded="false" aria-controls="details-{{ record.id }}">
                 {% if current_user.is_admin() %}
-                <td><input type="checkbox" class="record-checkbox" value="{{ record.id }}"></td>
+                <td><input type="checkbox" class="record-checkbox" value="{{ record.id }}" aria-label="Select record {{ record.ace360_id }}"></td>
                 {% endif %}
-                <td>{{ record.ace360_id }}</td>
-                <td>{{ record.status if record.status else '-' }}</td>
-                <td>{{ record.gateway_submitted if record.gateway_submitted else '-' }}</td>
-                <td>{{ record.approved_for_epa if record.approved_for_epa else '-' }}</td>
-                <td>{{ record.epa_window_closure if record.epa_window_closure else '-' }}</td>
-                <td>{{ record.project_start_date if record.project_start_date else '-' }}</td>
-                <td>{{ record.project_deadline_date if record.project_deadline_date else '-' }}</td>
-                <td>{{ record.first_attempt_date if record.first_attempt_date else '-' }}</td>
-                <td>
+                <td data-sort-value="{{ record.ace360_id }}"><span class="expand-indicator" aria-hidden="true">▸</span>{{ record.ace360_id }}</td>
+                <td data-sort-value="{{ record.status if record.status else '' }}">
+                    {% if record.status %}
+                        {% set status_class = '' %}
+                        {% if record.status == 'In Training' %}
+                            {% set status_class = 'status-training' %}
+                        {% elif record.status in ['Gateway in Progress', 'Gateway Evidence Complete', 'Gateway Submitted'] %}
+                            {% set status_class = 'status-gateway' %}
+                        {% elif record.status in ['Denied EPA', 'Approved for EPA'] %}
+                            {% set status_class = 'status-epa-pending' %}
+                        {% elif record.status in ['EPA in Progress', 'EPA Evidence Complete'] %}
+                            {% set status_class = 'status-epa-active' %}
+                        {% elif record.status == 'EPA Passed' %}
+                            {% set status_class = 'status-complete-passed' %}
+                        {% elif record.status == 'EPA Failed' %}
+                            {% set status_class = 'status-complete-failed' %}
+                        {% endif %}
+                        <span class="status-badge {{ status_class }}">{{ record.status }}</span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td data-sort-value="{{ record.gateway_submitted.isoformat() if record.gateway_submitted else '' }}">
+                    {% if record.gateway_submitted %}
+                        <span class="compact-date" data-tooltip="{{ record.gateway_submitted.strftime('%Y-%m-%d') }}">{{ record.gateway_submitted.strftime('%d %b') }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.approved_for_epa.isoformat() if record.approved_for_epa else '' }}">
+                    {% if record.approved_for_epa %}
+                        <span class="compact-date" data-tooltip="{{ record.approved_for_epa.strftime('%Y-%m-%d') }}">{{ record.approved_for_epa.strftime('%d %b') }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.epa_window_closure if record.epa_window_closure else '' }}">
+                    {% if record.epa_window_closure %}
+                        <span class="compact-date" data-tooltip="{{ record.epa_window_closure }}">{{ record.epa_window_closure[8:10] }} {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][record.epa_window_closure[5:7]|int - 1] }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.project_start_date.isoformat() if record.project_start_date else '' }}">
+                    {% if record.project_start_date %}
+                        <span class="compact-date" data-tooltip="{{ record.project_start_date.strftime('%Y-%m-%d') }}">{{ record.project_start_date.strftime('%d %b') }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.project_deadline_date.isoformat() if record.project_deadline_date else '' }}">
+                    {% if record.project_deadline_date %}
+                        <span class="compact-date" data-tooltip="{{ record.project_deadline_date.strftime('%Y-%m-%d') }}">{{ record.project_deadline_date.strftime('%d %b') }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.first_attempt_date.isoformat() if record.first_attempt_date else '' }}">
+                    {% if record.first_attempt_date %}
+                        <span class="compact-date" data-tooltip="{{ record.first_attempt_date.strftime('%Y-%m-%d') }}">{{ record.first_attempt_date.strftime('%d %b') }}</span>
+                    {% else %}-{% endif %}
+                </td>
+                <td data-sort-value="{{ record.variance_days if record.variance_days is not none else '' }}">
                     {% if record.variance_days is not none %}
                         <span class="badge {% if record.variance_days <= 0 %}bg-success{% else %}bg-warning text-dark{% endif %}">
                             {{ record.variance_days }}
@@ -102,14 +203,14 @@
                         -
                     {% endif %}
                 </td>
-                <td class="clickable-cell" onclick="window.location.href='{{ url_for('records', grade=record.overall_grade) }}'">
+                <td class="clickable-cell" data-sort-value="{{ record.overall_grade if record.overall_grade else '' }}" onclick="window.location.href='{{ url_for('records', grade=record.overall_grade) }}'">
                     {% if record.overall_grade %}
                         {{ record.overall_grade }}
                     {% else %}
                         -
                     {% endif %}
                 </td>
-                <td class="clickable-cell" onclick="window.location.href='{{ url_for('records', window=record.within_epa_window) }}'">
+                <td class="clickable-cell" data-sort-value="{{ record.within_epa_window if record.within_epa_window else '' }}" onclick="window.location.href='{{ url_for('records', window=record.within_epa_window) }}'">
                     {% if record.within_epa_window %}
                         <span class="badge {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">
                             {{ record.within_epa_window }}
@@ -118,21 +219,54 @@
                         -
                     {% endif %}
                 </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <a href="{{ url_for('view_record', id=record.id) }}" class="btn btn-info">View</a>
+                <td class="actions-cell">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Record actions">
+                        <a href="{{ url_for('view_record', id=record.id) }}" class="btn btn-primary-unified btn-sm" aria-label="View record {{ record.ace360_id }}">View</a>
                         {% if current_user.is_admin() %}
-                            <a href="{{ url_for('edit_record', id=record.id) }}" class="btn btn-warning">Edit</a>
+                            <a href="{{ url_for('edit_record', id=record.id) }}" class="btn btn-secondary-unified btn-sm" aria-label="Edit record {{ record.ace360_id }}">Edit</a>
                             <form action="{{ url_for('delete_record', id=record.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this record?');">
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                <button type="submit" class="btn btn-destructive btn-sm" aria-label="Delete record {{ record.ace360_id }}">Delete</button>
                             </form>
                         {% endif %}
+                    </div>
+                </td>
+            </tr>
+            <tr class="row-details" id="details-{{ record.id }}" aria-hidden="true">
+                <td colspan="{% if current_user.is_admin() %}14{% else %}13{% endif %}">
+                    <div class="row-details-content">
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Gateway Submitted</span>
+                                <span class="detail-value {% if not record.gateway_submitted %}empty{% endif %}">
+                                    {{ record.gateway_submitted.strftime('%Y-%m-%d') if record.gateway_submitted else 'Not set' }}
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">EPA Window Closure</span>
+                                <span class="detail-value {% if not record.epa_window_closure %}empty{% endif %}">
+                                    {{ record.epa_window_closure if record.epa_window_closure else 'Not set' }}
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Second Attempt</span>
+                                <span class="detail-value {% if not record.second_attempt_date %}empty{% endif %}">
+                                    {{ record.second_attempt_date.strftime('%Y-%m-%d') if record.second_attempt_date else 'Not set' }}
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Grade Date</span>
+                                <span class="detail-value {% if not record.grade_date %}empty{% endif %}">
+                                    {{ record.grade_date.strftime('%Y-%m-%d') if record.grade_date else 'Not set' }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Pagination -->
@@ -284,8 +418,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-filter" id="resetFilters">Reset</button>
-                    <button type="submit" class="btn btn-filter">OK &amp; Apply</button>
+                    <button type="button" class="btn btn-neutral" id="resetFilters">Reset</button>
+                    <button type="submit" class="btn btn-primary-unified">OK &amp; Apply</button>
                 </div>
             </form>
         </div>
@@ -313,8 +447,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-upload">Upload</button>
+                    <button type="button" class="btn btn-neutral" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-unified">Upload</button>
                 </div>
             </form>
         </div>
@@ -336,8 +470,8 @@
                     <div id="bulkDeleteInputs"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete Records</button>
+                    <button type="button" class="btn btn-neutral" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-destructive">Delete Records</button>
                 </div>
             </form>
         </div>
@@ -393,18 +527,282 @@ function updateBulkDeleteState() {
     }
 }
 
+// Update row highlighting based on checkbox state
+function updateRowHighlighting() {
+    document.querySelectorAll('.record-checkbox').forEach(function(checkbox) {
+        const row = checkbox.closest('tr');
+        if (checkbox.checked) {
+            row.classList.add('selected-row');
+        } else {
+            row.classList.remove('selected-row');
+        }
+    });
+}
+
 // Select all checkbox
 document.getElementById('selectAllCheckbox').addEventListener('change', function() {
     const checkboxes = document.querySelectorAll('.record-checkbox');
     checkboxes.forEach(cb => cb.checked = this.checked);
     updateBulkDeleteState();
+    updateRowHighlighting();
 });
 
 // Individual checkboxes
 document.querySelectorAll('.record-checkbox').forEach(function(checkbox) {
-    checkbox.addEventListener('change', updateBulkDeleteState);
+    checkbox.addEventListener('change', function() {
+        updateBulkDeleteState();
+        updateRowHighlighting();
+    });
 });
+{% endif %}
 
+// ========================================
+// Table Sorting (Client-side)
+// ========================================
+(function() {
+    const table = document.getElementById('recordsTable');
+    if (!table) return;
+
+    const tbody = table.querySelector('tbody');
+    const headers = table.querySelectorAll('th.sortable');
+    let currentSort = { column: null, direction: 'none' };
+
+    // Grade order for sorting
+    const gradeOrder = { 'Distinction': 1, 'Merit': 2, 'Pass': 3, 'Fail': 4, '': 5 };
+
+    function sortTable(column, type) {
+        const rows = Array.from(tbody.querySelectorAll('tr.expandable-row'));
+        const colIndex = Array.from(headers).findIndex(h => h.dataset.sort === column);
+        {% if current_user.is_admin() %}
+        const adjustedIndex = colIndex + 1; // Account for checkbox column
+        {% else %}
+        const adjustedIndex = colIndex;
+        {% endif %}
+
+        // Toggle direction
+        if (currentSort.column === column) {
+            if (currentSort.direction === 'asc') {
+                currentSort.direction = 'desc';
+            } else if (currentSort.direction === 'desc') {
+                currentSort.direction = 'none';
+            } else {
+                currentSort.direction = 'asc';
+            }
+        } else {
+            currentSort.column = column;
+            currentSort.direction = 'asc';
+        }
+
+        // Update header indicators
+        headers.forEach(h => {
+            h.classList.remove('sort-asc', 'sort-desc');
+            h.setAttribute('aria-sort', 'none');
+            h.querySelector('.sort-indicator').textContent = '▲▼';
+        });
+
+        const activeHeader = table.querySelector(`th[data-sort="${column}"]`);
+        if (currentSort.direction !== 'none') {
+            activeHeader.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            activeHeader.setAttribute('aria-sort', currentSort.direction === 'asc' ? 'ascending' : 'descending');
+            activeHeader.querySelector('.sort-indicator').textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+        }
+
+        // Sort rows
+        if (currentSort.direction === 'none') {
+            // Reset to original order (by data-record-id)
+            rows.sort((a, b) => {
+                return parseInt(b.dataset.recordId) - parseInt(a.dataset.recordId);
+            });
+        } else {
+            rows.sort((a, b) => {
+                const aCell = a.cells[adjustedIndex];
+                const bCell = b.cells[adjustedIndex];
+                let aVal = aCell.dataset.sortValue || '';
+                let bVal = bCell.dataset.sortValue || '';
+
+                let comparison = 0;
+
+                if (type === 'number') {
+                    aVal = aVal === '' ? Number.MAX_VALUE : parseFloat(aVal);
+                    bVal = bVal === '' ? Number.MAX_VALUE : parseFloat(bVal);
+                    comparison = aVal - bVal;
+                } else if (type === 'date') {
+                    aVal = aVal === '' ? '9999-12-31' : aVal;
+                    bVal = bVal === '' ? '9999-12-31' : bVal;
+                    comparison = aVal.localeCompare(bVal);
+                } else if (type === 'grade') {
+                    comparison = (gradeOrder[aVal] || 5) - (gradeOrder[bVal] || 5);
+                } else {
+                    comparison = aVal.localeCompare(bVal);
+                }
+
+                return currentSort.direction === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        // Re-append rows in new order (including their detail rows)
+        rows.forEach(row => {
+            const detailsRow = document.getElementById('details-' + row.dataset.recordId);
+            tbody.appendChild(row);
+            if (detailsRow) {
+                tbody.appendChild(detailsRow);
+            }
+        });
+
+        // Announce sort change for screen readers
+        const announcement = document.createElement('div');
+        announcement.setAttribute('aria-live', 'polite');
+        announcement.setAttribute('aria-atomic', 'true');
+        announcement.className = 'visually-hidden';
+        announcement.textContent = currentSort.direction === 'none'
+            ? 'Table reset to default order'
+            : `Table sorted by ${column} ${currentSort.direction === 'asc' ? 'ascending' : 'descending'}`;
+        document.body.appendChild(announcement);
+        setTimeout(() => announcement.remove(), 1000);
+    }
+
+    // Add click and keyboard listeners to sortable headers
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            sortTable(this.dataset.sort, this.dataset.type);
+        });
+        header.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                sortTable(this.dataset.sort, this.dataset.type);
+            }
+        });
+    });
+})();
+
+// ========================================
+// Horizontal Scroll Indicators
+// ========================================
+(function() {
+    const container = document.querySelector('.table-scroll-container');
+    const scrollArea = document.getElementById('tableScrollArea');
+    if (!container || !scrollArea) return;
+
+    function updateScrollIndicators() {
+        const scrollLeft = scrollArea.scrollLeft;
+        const scrollWidth = scrollArea.scrollWidth;
+        const clientWidth = scrollArea.clientWidth;
+
+        if (scrollWidth <= clientWidth) {
+            container.classList.remove('can-scroll-left', 'can-scroll-right');
+            return;
+        }
+
+        container.classList.toggle('can-scroll-left', scrollLeft > 5);
+        container.classList.toggle('can-scroll-right', scrollLeft < scrollWidth - clientWidth - 5);
+    }
+
+    scrollArea.addEventListener('scroll', updateScrollIndicators);
+    window.addEventListener('resize', updateScrollIndicators);
+    updateScrollIndicators();
+})();
+
+// ========================================
+// Quick Filters (Server-side navigation)
+// ========================================
+(function() {
+    const quickFilters = document.getElementById('quickFilters');
+    if (!quickFilters) return;
+
+    // Build URL with current filters
+    function buildFilterUrl(filterType, filterValue) {
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+
+        // Reset to page 1 when filtering
+        params.delete('page');
+
+        if (filterValue) {
+            params.set(filterType, filterValue);
+        } else {
+            params.delete(filterType);
+        }
+
+        return url.toString();
+    }
+
+    // Handle status dropdown
+    const statusSelect = document.getElementById('quickStatusFilter');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            window.location.href = buildFilterUrl('status', this.value);
+        });
+    }
+
+    // Handle filter chips (grade, window)
+    const filterChips = quickFilters.querySelectorAll('.filter-chip');
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const filterType = this.dataset.filter;
+            const filterValue = this.dataset.value;
+            window.location.href = buildFilterUrl(filterType, filterValue);
+        });
+    });
+})();
+
+// ========================================
+// Expandable Row Details
+// ========================================
+(function() {
+    const expandableRows = document.querySelectorAll('.expandable-row');
+    if (!expandableRows.length) return;
+
+    function toggleRow(row) {
+        const recordId = row.dataset.recordId;
+        const detailsRow = document.getElementById('details-' + recordId);
+        const isExpanded = row.classList.contains('expanded');
+
+        if (isExpanded) {
+            // Collapse
+            row.classList.remove('expanded');
+            row.setAttribute('aria-expanded', 'false');
+            detailsRow.classList.remove('show');
+            detailsRow.setAttribute('aria-hidden', 'true');
+        } else {
+            // Expand
+            row.classList.add('expanded');
+            row.setAttribute('aria-expanded', 'true');
+            detailsRow.classList.add('show');
+            detailsRow.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    expandableRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't expand if clicking on checkbox, links, buttons, or form elements
+            const target = e.target;
+            if (target.matches('input, a, button, .btn, .actions-cell, .actions-cell *') ||
+                target.closest('.actions-cell') ||
+                target.closest('a') ||
+                target.closest('button') ||
+                target.closest('form') ||
+                target.closest('input')) {
+                return;
+            }
+            toggleRow(this);
+        });
+
+        // Keyboard support
+        row.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                // Don't trigger if focused on interactive element
+                const focused = document.activeElement;
+                if (focused.matches('input, a, button')) {
+                    return;
+                }
+                e.preventDefault();
+                toggleRow(this);
+            }
+        });
+    });
+})();
+
+{% if current_user.is_admin() %}
 // Populate hidden inputs before form submission
 document.getElementById('bulkDeleteModal').addEventListener('show.bs.modal', function() {
     const checkedBoxes = document.querySelectorAll('.record-checkbox:checked');

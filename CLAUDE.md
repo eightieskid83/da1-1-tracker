@@ -148,18 +148,66 @@ All templates extend `base.html` which includes Bootstrap 5.3, Plus Jakarta Sans
 
 **Records Table Columns** (in order):
 1. Checkbox (admin only) - for bulk selection
-2. ACE360 ID
-3. Status
-4. Gateway Submitted
-5. EPA Ready Date
-6. EPA Window Closure (computed: EPA Ready + 84 days)
-7. Project Start
-8. Project Deadline
-9. First Attempt
+2. ACE360 ID (with expand indicator ▸)
+3. Status (color-coded badges)
+4. Gateway Submitted (compact date format)
+5. EPA Ready Date (compact date format)
+6. EPA Window Closure (compact date format, computed: EPA Ready + 84 days)
+7. Project Start (compact date format)
+8. Project Deadline (compact date format)
+9. First Attempt (compact date format)
 10. Variance (Days)
 11. Overall Grade
 12. EPA Completed within SLA (formerly "Within EPA Window")
 13. Actions
+
+### Records Table UX Features
+
+**Sticky Header**: Table header stays visible when scrolling vertically.
+
+**Column Sorting**: Click any column header (except Actions) to sort. Three-state cycling: ascending → descending → original order. Sort indicators (▲/▼) show current state. Keyboard accessible (Enter/Space).
+
+**Compact Date Format**: Dates display as "DD MMM" (e.g., "04 Feb"). Hover to see full date (YYYY-MM-DD) in tooltip.
+
+**Horizontal Scroll Indicators**: Fade/shadow effects appear on table edges when content overflows horizontally.
+
+**Expandable Row Details**: Click anywhere on a row (except checkboxes/actions) to expand inline details showing:
+- Gateway Submitted (full date)
+- EPA Window Closure (full date)
+- Second Attempt (full date)
+- Grade Date (full date)
+
+Expand indicator (▸) rotates when expanded. Keyboard accessible (Enter/Space).
+
+**Row Selection Highlight**: Selected rows (via checkbox) get purple background highlight.
+
+**Status Badges**: Color-coded by stage:
+| Stage | Statuses | Color |
+|-------|----------|-------|
+| Training | In Training | Gray |
+| Gateway | Gateway in Progress, Gateway Evidence Complete, Gateway Submitted | Blue |
+| EPA Pending | Denied EPA, Approved for EPA | Yellow |
+| EPA Active | EPA in Progress, EPA Evidence Complete | Purple |
+| Complete | EPA Passed | Green |
+| Complete | EPA Failed | Red |
+
+### Quick Filters
+
+Inline filter bar above the table with:
+- **Status**: Dropdown selector (turns purple when active)
+- **Grade**: Chip buttons (All, Distinction, Merit, Pass, Fail)
+- **EPA SLA**: Chip buttons (All, Yes, No)
+- **Date Filters...**: Link to open advanced filter modal
+
+Active filters are highlighted. Quick filters navigate server-side (page reload).
+
+### Button Palette
+
+Unified button colors across the application:
+- **Primary** (purple `#512EAB`): Upload, Add New Record, View, OK/Apply
+- **Secondary** (yellow `#FFCE00`): Filters, Export, Edit
+- **Destructive** (red `#DC3545`): Delete Selected, individual Delete
+- **Neutral** (gray `#6c757d`): Cancel buttons
 
 **Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Change Password, Delete Account, and Logout options. Admin users see an additional "Manage Users" option and a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
 
