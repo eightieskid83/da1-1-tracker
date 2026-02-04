@@ -2,21 +2,54 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Deployment
+
+**Live URL**: https://da1-1-tracker.onrender.com
+
+**GitHub**: https://github.com/eightieskid83/da1-1-tracker
+
+**Hosting**: Render (Free tier)
+- Web Service: `da1-1-tracker`
+- PostgreSQL Database: `da1-1-tracker-db`
+
+Auto-deploy is enabled: every `git push` to `main` triggers a new deployment.
+
 ## Commands
 
 ```bash
-# Install dependencies (use virtual environment)
+# Local Development (macOS)
 source venv/bin/activate
 pip install -r requirements.txt
-
-# Run the application
 python app.py
 # Access at http://localhost:5000
+
+# Local Development (Windows)
+venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
 ```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Production | PostgreSQL connection URL (Render provides this) |
+| `SECRET_KEY` | Production | Flask secret key for sessions |
+| `MAIL_SERVER` | Optional | SMTP server (default: smtp.gmail.com) |
+| `MAIL_PORT` | Optional | SMTP port (default: 587) |
+| `MAIL_USERNAME` | Optional | SMTP username |
+| `MAIL_PASSWORD` | Optional | SMTP password/app password |
+| `MAIL_DEFAULT_SENDER` | Optional | Default email sender address |
+
+Local development uses SQLite automatically (no env vars needed).
 
 ## Architecture
 
-Flask web application for tracking apprentice EPA (End-Point Assessment) records with SQLite database.
+Flask web application for tracking apprentice EPA (End-Point Assessment) records.
+
+**Database**:
+- Production: PostgreSQL on Render
+- Local: SQLite (`sqlite:///da11_tracker.db`)
 
 ### Key Files
 
@@ -29,7 +62,10 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
     - `deleted_account_date`: Timestamp for soft-deleted accounts
     - `approval_status`: `'pending'` | `'approved'` | `'rejected'` — controls whether new registrations require admin sign-off before activation
     - `is_admin()`, `is_viewer()`, `is_deleted()` methods for role checking
-- **database.py** - SQLAlchemy initialization, uses `sqlite:///da11_tracker.db`
+- **database.py** - SQLAlchemy initialization with dual-mode storage:
+  - Uses `DATABASE_URL` environment variable for PostgreSQL (production)
+  - Falls back to `sqlite:///da11_tracker.db` for local development
+  - Handles Render's `postgres://` to `postgresql://` URL conversion
 - **migrate_add_approval_status.py** - Adds `approval_status` column and backfills existing users to `'approved'`. Run once: `python migrate_add_approval_status.py`
 
 ### Routes
