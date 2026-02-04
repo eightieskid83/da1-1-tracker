@@ -27,7 +27,7 @@ def init_db(app):
         if admin is None:
             admin = User(
                 username='admin',
-                email='chris.oley@outlook.com',
+                email='chris_oley@icloud.com',
                 forename='Chris',
                 surname='Oley',
                 job_title='Administrator',
@@ -37,13 +37,15 @@ def init_db(app):
                 role='admin',
                 approval_status='approved'
             )
-            admin.set_password('admin123')
+            admin.set_password('DA11Admin2024!')
             db.session.add(admin)
             db.session.commit()
-            print("Default admin user created (admin/admin123)")
-        elif admin.email != 'chris.oley@outlook.com':
-            admin.email = 'chris.oley@outlook.com'
+            print("Default admin user created")
+        else:
+            # Update existing admin user
+            admin.email = 'chris_oley@icloud.com'
             admin.forename = 'Chris'
             admin.surname = 'Oley'
+            admin.set_password('DA11Admin2024!')
             db.session.commit()
-            print("Admin user email updated to chris.oley@outlook.com")
+            print("Admin user updated")
