@@ -102,13 +102,21 @@
                     {% endif %}
                 </div>
                 <div class="col-md-4">
-                    <strong>Within EPA Window:</strong>
+                    <strong>EPA Window Closure:</strong>
+                    {% if record.epa_window_closure %}
+                        <span>{{ record.epa_window_closure }}</span>
+                    {% else %}
+                        <span class="text-muted">N/A (requires EPA Ready Date)</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <strong>EPA Completed within SLA:</strong>
                     {% if record.within_epa_window %}
                         <span class="badge {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">
                             {{ record.within_epa_window }}
                         </span>
                     {% else %}
-                        <span class="text-muted">N/A (requires Grade Date & Approved for EPA dates)</span>
+                        <span class="text-muted">N/A (requires Grade Date & EPA Ready Date)</span>
                     {% endif %}
                 </div>
             </div>

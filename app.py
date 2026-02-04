@@ -855,12 +855,36 @@ def view_record(id):
     return render_template('view.html', record=record)
 
 
+@app.route('/delete-bulk', methods=['POST'])
+@login_required
+@admin_required
+def delete_records_bulk():
+    """Delete multiple apprentice records."""
+    record_ids = request.form.getlist('record_ids[]')
+    if not record_ids:
+        flash('No records selected for deletion.', 'warning')
+        return redirect(url_for('records'))
+
+    try:
+        ids_to_delete = [int(rid) for rid in record_ids]
+        deleted_count = ApprenticeRecord.query.filter(
+            ApprenticeRecord.id.in_(ids_to_delete)
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f'{deleted_count} record(s) deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting records: {str(e)}', 'danger')
+
+    return redirect(url_for('records'))
+
+
 def get_export_data():
     """Get all records formatted for export."""
     records = ApprenticeRecord.query.order_by(ApprenticeRecord.id.desc()).all()
-    headers = ['ACE360 ID', 'Status', 'Gateway Submitted', 'EPA Ready Date', 'Project Start Date',
-               'Project Deadline', 'First Attempt', 'Second Attempt', 'Variance (Days)',
-               'Overall Grade', 'Grade Date', 'Within EPA Window']
+    headers = ['ACE360 ID', 'Status', 'Gateway Submitted', 'EPA Ready Date', 'EPA Window Closure',
+               'Project Start Date', 'Project Deadline', 'First Attempt', 'Second Attempt',
+               'Variance (Days)', 'Overall Grade', 'Grade Date', 'EPA Completed within SLA']
     rows = []
     for r in records:
         rows.append([
@@ -868,6 +892,7 @@ def get_export_data():
             r.status if r.status else '',
             str(r.gateway_submitted) if r.gateway_submitted else '',
             str(r.approved_for_epa) if r.approved_for_epa else '',
+            r.epa_window_closure if r.epa_window_closure else '',
             str(r.project_start_date) if r.project_start_date else '',
             str(r.project_deadline_date) if r.project_deadline_date else '',
             str(r.first_attempt_date) if r.first_attempt_date else '',

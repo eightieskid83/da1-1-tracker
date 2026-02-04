@@ -28,6 +28,14 @@ class ApprenticeRecord(db.Model):
         return None
 
     @property
+    def epa_window_closure(self):
+        """Calculate EPA Window Closure: EPA Ready date + 84 days (12 weeks)."""
+        if self.approved_for_epa:
+            closure_date = self.approved_for_epa + timedelta(days=84)
+            return closure_date.strftime('%Y-%m-%d')
+        return None
+
+    @property
     def within_epa_window(self):
         """Check if grade_date is within 84 days (12 weeks) of approved_for_epa"""
         if self.grade_date and self.approved_for_epa:

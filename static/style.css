@@ -337,3 +337,11 @@ h4 {
     color: #6c757d;
     font-size: 0.9rem;
 }
+
+/* Bulk delete checkbox styling */
+.record-checkbox,
+#selectAllCheckbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}

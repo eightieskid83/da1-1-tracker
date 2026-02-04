@@ -33,6 +33,10 @@
                         <th>EPA Ready Date:</th>
                         <td>{{ record.approved_for_epa if record.approved_for_epa else 'Not set' }}</td>
                     </tr>
+                    <tr>
+                        <th>EPA Window Closure:</th>
+                        <td>{{ record.epa_window_closure if record.epa_window_closure else 'Not set' }}</td>
+                    </tr>
                 </table>
 
                 <h5 class="card-title mt-4">Project Dates</h5>
@@ -99,7 +103,7 @@
             <div class="col-md-6">
                 <div class="card bg-light">
                     <div class="card-body">
-                        <h6>Within EPA Window (12 weeks)</h6>
+                        <h6>EPA Completed within SLA (12 weeks)</h6>
                         <p class="mb-0">
                             {% if record.within_epa_window %}
                                 <span class="badge fs-5 {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">

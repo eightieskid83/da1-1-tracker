@@ -57,7 +57,8 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
 - **models.py** - SQLAlchemy models:
   - `ApprenticeRecord` model with auto-calculated properties:
     - `variance_days`: first_attempt_date - project_deadline_date
-    - `within_epa_window`: "Yes" if grade_date within 84 days (12 weeks) of approved_for_epa
+    - `epa_window_closure`: approved_for_epa + 84 days (12 weeks), formatted as YYYY-MM-DD
+    - `within_epa_window`: "Yes" if grade_date within 84 days (12 weeks) of approved_for_epa (displayed as "EPA Completed within SLA")
   - `User` model with authentication and profile fields:
     - `deleted_account_date`: Timestamp for soft-deleted accounts
     - `approval_status`: `'pending'` | `'approved'` | `'rejected'` — controls whether new registrations require admin sign-off before activation
@@ -90,6 +91,7 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
 | `/edit/<id>` | Admin Only | Edit existing record |
 | `/view/<id>` | All Users | View record details |
 | `/delete/<id>` | Admin Only | Delete record (POST) |
+| `/delete-bulk` | Admin Only | Delete multiple records (POST) - accepts `record_ids[]` form data |
 | `/upload` | Admin Only | Import records from CSV/XLSX (POST) |
 | `/export/csv` | All Users | Export as CSV |
 | `/export/xlsx` | All Users | Export as Excel |
@@ -121,8 +123,16 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
 The `/records` route supports filtering via query parameters:
 - `status` - Filter by status value
 - `grade` - Filter by overall grade
-- `window` - Filter by within EPA window (Yes/No)
+- `window` - Filter by EPA Completed within SLA (Yes/No)
 - Date range filters: `gateway_from/to`, `approved_from/to`, `project_start_from/to`, `deadline_from/to`, `first_attempt_from/to`, `second_attempt_from/to`, `grade_date_from/to`
+
+### Bulk Delete
+
+Admin users can select multiple records using checkboxes in the records table:
+- "Select All" checkbox in the header toggles all visible records
+- A "Delete Selected (N)" button appears when records are selected
+- Clicking the button opens a confirmation modal showing the count
+- Submitting the form POSTs to `/delete-bulk` with selected record IDs
 
 ### User Roles & Permissions
 
@@ -135,6 +145,21 @@ The `/records` route supports filtering via query parameters:
 ### Templates
 
 All templates extend `base.html` which includes Bootstrap 5.3, Plus Jakarta Sans font, and navbar with user dropdown menu. Custom styling in `static/style.css` uses brand colors: navbar `#0d004d`, table headers `#512eab`, background `#edecf6`, filter modal header `#0d004d`, date range filter band `#512eab`, warning buttons `#FFCE00`.
+
+**Records Table Columns** (in order):
+1. Checkbox (admin only) - for bulk selection
+2. ACE360 ID
+3. Status
+4. Gateway Submitted
+5. EPA Ready Date
+6. EPA Window Closure (computed: EPA Ready + 84 days)
+7. Project Start
+8. Project Deadline
+9. First Attempt
+10. Variance (Days)
+11. Overall Grade
+12. EPA Completed within SLA (formerly "Within EPA Window")
+13. Actions
 
 **Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Change Password, Delete Account, and Logout options. Admin users see an additional "Manage Users" option and a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
 
