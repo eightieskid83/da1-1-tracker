@@ -466,6 +466,85 @@ def reject_registration(user_id):
     return jsonify({'success': True, 'message': 'Rejected. Notification sent.'}), 200
 
 
+@app.route('/admin/users')
+@login_required
+@admin_required
+def get_users():
+    """Return all active users as JSON."""
+    users = User.query.filter(User.deleted_account_date.is_(None)).order_by(User.surname).all()
+    return jsonify([{
+        'id': u.id,
+        'forename': u.forename,
+        'surname': u.surname,
+        'email': u.email,
+        'job_title': u.job_title,
+        'telephone': u.telephone or '',
+        'role': u.role
+    } for u in users])
+
+
+@app.route('/admin/users/<int:user_id>/update', methods=['POST'])
+@login_required
+@admin_required
+def update_user(user_id):
+    """Update user details (admin only)."""
+    user = User.query.get_or_404(user_id)
+
+    # Prevent admin from demoting themselves
+    new_role = request.form.get('role', user.role)
+    if user.id == current_user.id and new_role != 'admin':
+        return jsonify({'success': False, 'message': 'You cannot demote yourself from admin.'}), 400
+
+    # Get form data
+    forename = request.form.get('forename', '').strip()
+    surname = request.form.get('surname', '').strip()
+    email = request.form.get('email', '').strip()
+    job_title = request.form.get('job_title', '').strip()
+    telephone = request.form.get('telephone', '').strip()
+
+    # Validate required fields
+    if not all([forename, surname, email, job_title]):
+        return jsonify({'success': False, 'message': 'All required fields must be filled.'}), 400
+
+    # Validate email uniqueness (exclude target user)
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user and existing_user.id != user.id:
+        return jsonify({'success': False, 'message': 'Email address already in use by another user.'}), 400
+
+    # Validate role
+    if new_role not in ['admin', 'viewer']:
+        return jsonify({'success': False, 'message': 'Invalid role specified.'}), 400
+
+    # Update user fields
+    user.forename = forename
+    user.surname = surname
+    user.email = email
+    user.job_title = job_title
+    user.telephone = telephone if telephone else None
+    user.role = new_role
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'User updated successfully.'}), 200
+
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    """Soft delete user (admin only)."""
+    user = User.query.get_or_404(user_id)
+
+    # Prevent admin from deleting themselves
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'You cannot delete your own account from here.'}), 400
+
+    # Soft delete by setting deleted_account_date
+    user.deleted_account_date = datetime.now()
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'User deleted successfully.'}), 200
+
+
 @app.route('/activate/<token>')
 def activate_account(token):
     """Handle account activation from email link."""

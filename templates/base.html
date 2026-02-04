@@ -42,6 +42,9 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editProfileModal">Edit Profile</a></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change Password</a></li>
+                            {% if current_user.is_admin() %}
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageUsersModal">Manage Users</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">Delete Account</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
@@ -199,6 +202,113 @@
         </div>
     </div>
 
+    <!-- Manage Users Modal -->
+    {% if current_user.is_authenticated and current_user.is_admin() %}
+    <div class="modal fade" id="manageUsersModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Manage Users</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Forename</th>
+                                    <th>Surname</th>
+                                    <th>Email</th>
+                                    <th>Job Title</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId" name="user_id">
+                        <div class="mb-3">
+                            <label for="editUserForename" class="form-label field-label-purple">Forename</label>
+                            <input type="text" class="form-control" id="editUserForename" name="forename" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserSurname" class="form-label field-label-purple">Surname</label>
+                            <input type="text" class="form-control" id="editUserSurname" name="surname" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserEmail" class="form-label field-label-purple">Email</label>
+                            <input type="email" class="form-control" id="editUserEmail" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserJobTitle" class="form-label field-label-purple">Job Title</label>
+                            <input type="text" class="form-control" id="editUserJobTitle" name="job_title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserTelephone" class="form-label field-label-purple">Telephone</label>
+                            <input type="tel" class="form-control" id="editUserTelephone" name="telephone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserRole" class="form-label field-label-purple">Role</label>
+                            <select class="form-select" id="editUserRole" name="role" required>
+                                <option value="admin">Admin</option>
+                                <option value="viewer">Non-admin</option>
+                            </select>
+                        </div>
+                        <div id="editUserMessage" class="alert" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="saveUserEdit()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Confirmation Modal -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Delete User</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deleteUserId">
+                    <p>Are you sure you want to delete <strong id="deleteUserName"></strong>?</p>
+                    <p class="text-muted small">This action will prevent the user from logging in.</p>
+                    <div id="deleteUserMessage" class="alert" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-warning" onclick="deleteUser()">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -355,6 +465,159 @@
 
     {% if current_user.is_authenticated and current_user.is_admin() %}
     <script>
+    // User management functions
+    let usersData = [];
+
+    function fetchUsers() {
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+
+        fetch('/admin/users')
+            .then(response => response.json())
+            .then(users => {
+                usersData = users;
+                tbody.innerHTML = '';
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found.</td></tr>';
+                } else {
+                    users.forEach(user => {
+                        const roleDisplay = user.role === 'admin' ? 'Admin' : 'Non-admin';
+                        const tr = document.createElement('tr');
+                        tr.setAttribute('data-user-id', user.id);
+                        tr.innerHTML =
+                            '<td>' + escapeHtml(user.forename) + '</td>' +
+                            '<td>' + escapeHtml(user.surname) + '</td>' +
+                            '<td>' + escapeHtml(user.email) + '</td>' +
+                            '<td>' + escapeHtml(user.job_title) + '</td>' +
+                            '<td>' + roleDisplay + '</td>' +
+                            '<td>' +
+                                '<button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditUserModal(' + user.id + ')" title="Edit">' +
+                                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.854a.5.5 0 0 1 .708 0l2.292 2.292a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-4 1.5a.5.5 0 0 1-.65-.65l1.5-4a.5.5 0 0 1 .11-.168l9.5-9.5zm.708 2.354L11 1.354 12.646 3l1.854-1.854-1.646-1.792zM11.207 4l-8.5 8.5-1.012 2.696 2.696-1.012 8.5-8.5L11.207 4z"/></svg>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUser(' + user.id + ', \'' + escapeHtml(user.forename) + ' ' + escapeHtml(user.surname) + '\')" title="Delete">' +
+                                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>' +
+                                '</button>' +
+                            '</td>';
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading users.</td></tr>';
+                console.error('Failed to fetch users:', err);
+            });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function openEditUserModal(userId) {
+        const user = usersData.find(u => u.id === userId);
+        if (!user) return;
+
+        document.getElementById('editUserId').value = user.id;
+        document.getElementById('editUserForename').value = user.forename;
+        document.getElementById('editUserSurname').value = user.surname;
+        document.getElementById('editUserEmail').value = user.email;
+        document.getElementById('editUserJobTitle').value = user.job_title;
+        document.getElementById('editUserTelephone').value = user.telephone || '';
+        document.getElementById('editUserRole').value = user.role;
+
+        const msgDiv = document.getElementById('editUserMessage');
+        msgDiv.style.display = 'none';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('editUserModal')).show();
+    }
+
+    function saveUserEdit() {
+        const userId = document.getElementById('editUserId').value;
+        const formData = new FormData(document.getElementById('editUserForm'));
+        const msgDiv = document.getElementById('editUserMessage');
+
+        fetch('/admin/users/' + userId + '/update', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                msgDiv.className = 'alert alert-success';
+                msgDiv.textContent = data.message;
+                msgDiv.style.display = 'block';
+
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    fetchUsers();
+                }, 1500);
+            } else {
+                msgDiv.className = 'alert alert-danger';
+                msgDiv.textContent = data.message;
+                msgDiv.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            msgDiv.className = 'alert alert-danger';
+            msgDiv.textContent = 'An error occurred. Please try again.';
+            msgDiv.style.display = 'block';
+        });
+    }
+
+    function confirmDeleteUser(userId, userName) {
+        document.getElementById('deleteUserId').value = userId;
+        document.getElementById('deleteUserName').textContent = userName;
+
+        const msgDiv = document.getElementById('deleteUserMessage');
+        msgDiv.style.display = 'none';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteUserModal')).show();
+    }
+
+    function deleteUser() {
+        const userId = document.getElementById('deleteUserId').value;
+        const msgDiv = document.getElementById('deleteUserMessage');
+
+        fetch('/admin/users/' + userId + '/delete', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                msgDiv.className = 'alert alert-success';
+                msgDiv.textContent = data.message;
+                msgDiv.style.display = 'block';
+
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+                    // Remove the row from the users table
+                    const row = document.querySelector('#usersTableBody tr[data-user-id="' + userId + '"]');
+                    if (row) row.remove();
+                    // Update the usersData array
+                    usersData = usersData.filter(u => u.id != userId);
+                    if (usersData.length === 0) {
+                        document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="6" class="text-center">No users found.</td></tr>';
+                    }
+                }, 1500);
+            } else {
+                msgDiv.className = 'alert alert-danger';
+                msgDiv.textContent = data.message;
+                msgDiv.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            msgDiv.className = 'alert alert-danger';
+            msgDiv.textContent = 'An error occurred. Please try again.';
+            msgDiv.style.display = 'block';
+        });
+    }
+
+    // Fetch users when the Manage Users modal is shown
+    document.getElementById('manageUsersModal').addEventListener('show.bs.modal', function() {
+        fetchUsers();
+    });
+
     (function() {
         const bellBtn = document.getElementById('notificationBellBtn');
         const dropdown = document.getElementById('notificationDropdown');

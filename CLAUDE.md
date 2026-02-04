@@ -109,6 +109,13 @@ Flask web application for tracking apprentice EPA (End-Point Assessment) records
 | `/admin/notifications/approve/<id>` | POST | Sets `approval_status='approved'`, regenerates token if expired, sends activation email |
 | `/admin/notifications/reject/<id>` | POST | Sets `approval_status='rejected'`, sends rejection email |
 
+#### Admin User Management Routes
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/admin/users` | GET | Returns JSON array of all active (non-deleted) users |
+| `/admin/users/<id>/update` | POST | Update user details (forename, surname, email, job_title, telephone, role). Prevents admin from demoting themselves. Validates email uniqueness. |
+| `/admin/users/<id>/delete` | POST | Soft delete user by setting `deleted_account_date`. Prevents admin from deleting themselves. |
+
 ### Filtering
 
 The `/records` route supports filtering via query parameters:
@@ -129,11 +136,13 @@ The `/records` route supports filtering via query parameters:
 
 All templates extend `base.html` which includes Bootstrap 5.3, Plus Jakarta Sans font, and navbar with user dropdown menu. Custom styling in `static/style.css` uses brand colors: navbar `#0d004d`, table headers `#512eab`, background `#edecf6`, filter modal header `#0d004d`, date range filter band `#512eab`, warning buttons `#FFCE00`.
 
-**Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Change Password, Delete Account, and Logout options. Admin users also see a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
+**Navbar**: Displays "Welcome, [forename]" dropdown with Edit Profile, Change Password, Delete Account, and Logout options. Admin users see an additional "Manage Users" option and a bell icon with a red badge showing the count of pending registrations. Clicking the bell fetches `/admin/notifications` and populates a dropdown; clicking an item opens the Approval modal.
 
 **Profile Modals**: Edit Profile modal allows users to update their details. Change Password modal requires current password validation and new password confirmation (minimum 8 characters). Delete Account modal includes confirmation and sends email notification upon deletion.
 
 **Approval Modal** (admin only): Opens from a notification dropdown item. Displays the pending user's name, email, and registration date. Accept sends the activation email and sets `approval_status='approved'`; Reject sends a rejection email and sets `approval_status='rejected'`. The notification disappears from the dropdown on either outcome.
+
+**Manage Users Modal** (admin only): Opens from the user dropdown menu. Displays a table of all active users with columns: Forename, Surname, Email, Job Title, Role, Actions. Actions include Edit (pencil icon) and Delete (bin icon). Edit opens a form modal to modify user details including role (Admin/Non-admin dropdown). Delete opens a confirmation dialog; confirming soft-deletes the user. Role display mapping: `'admin'` → "Admin", `'viewer'` → "Non-admin".
 
 **Email Templates**: `emails/activation.html` and `.txt` are used for both the original (now removed) auto-send and the admin-approve flow. `emails/rejection.html` and `.txt` mirror the activation template structure but contain no button or link.
 
