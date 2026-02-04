@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}View Record - {{ record.ace360_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Record Details: ACE360 ID {{ record.ace360_id }}</h1>
+    <div>
+        {% if current_user.is_admin() %}
+            <a href="{{ url_for('edit_record', id=record.id) }}" class="btn btn-warning">Edit</a>
+        {% endif %}
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <h5 class="card-title">Status</h5>
+                <p class="fs-5">{{ record.status if record.status else 'Not set' }}</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="card-title">EPA Timeline</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Gateway Submitted:</th>
+                        <td>{{ record.gateway_submitted if record.gateway_submitted else 'Not set' }}</td>
+                    </tr>
+                    <tr>
+                        <th>EPA Ready Date:</th>
+                        <td>{{ record.approved_for_epa if record.approved_for_epa else 'Not set' }}</td>
+                    </tr>
+                </table>
+
+                <h5 class="card-title mt-4">Project Dates</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Project Start:</th>
+                        <td>{{ record.project_start_date if record.project_start_date else 'Not set' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Project Deadline:</th>
+                        <td>{{ record.project_deadline_date if record.project_deadline_date else 'Not set' }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="col-md-6">
+                <h5 class="card-title">Attempt Dates</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>First Attempt:</th>
+                        <td>{{ record.first_attempt_date if record.first_attempt_date else 'Not set' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Second Attempt:</th>
+                        <td>{{ record.second_attempt_date if record.second_attempt_date else 'Not set' }}</td>
+                    </tr>
+                </table>
+
+                <h5 class="card-title mt-4">Grading</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Overall Grade:</th>
+                        <td>{{ record.overall_grade if record.overall_grade else 'Not set' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Grade Date:</th>
+                        <td>{{ record.grade_date if record.grade_date else 'Not set' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <hr>
+
+        <h5 class="card-title">Additional Metrics</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Variance (Days)</h6>
+                        <p class="mb-0">
+                            {% if record.variance_days is not none %}
+                                <span class="badge fs-5 {% if record.variance_days <= 0 %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {{ record.variance_days }} days
+                                </span>
+                                <br><small class="text-muted">First Attempt - Project Deadline</small>
+                            {% else %}
+                                <span class="text-muted">Requires First Attempt & Project Deadline dates</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Within EPA Window (12 weeks)</h6>
+                        <p class="mb-0">
+                            {% if record.within_epa_window %}
+                                <span class="badge fs-5 {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ record.within_epa_window }}
+                                </span>
+                                <br><small class="text-muted">Grade Date within 84 days of Approved for EPA</small>
+                            {% else %}
+                                <span class="text-muted">Requires Grade Date & Approved for EPA dates</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

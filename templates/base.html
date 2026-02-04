@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DA1.1 Tracker - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">DA1.1 Tracker</a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('records') }}">All Records</a>
+                {% if current_user.is_authenticated and current_user.is_admin() %}
+                    <a class="nav-link" href="{{ url_for('add_record') }}">Add Record</a>
+                {% endif %}
+            </div>
+            <div class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated and current_user.is_admin() %}
+                    <div class="nav-item notification-bell-container">
+                        <button class="btn notification-bell-btn" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBellBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            {% if get_pending_registration_count() > 0 %}
+                                <span class="notification-badge" id="notificationBadge">{{ get_pending_registration_count() }}</span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown" id="notificationDropdown">
+                            <li><span class="notification-empty">No pending requests</span></li>
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
+                            Welcome, {{ current_user.forename }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editProfileModal">Edit Profile</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">Delete Account</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Edit Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="mb-3">
+                            <label for="profileForename" class="form-label field-label-purple">Forename</label>
+                            <input type="text" class="form-control" id="profileForename" name="forename"
+                                   value="{{ current_user.forename if current_user.is_authenticated else '' }}" disabled required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileSurname" class="form-label field-label-purple">Surname</label>
+                            <input type="text" class="form-control" id="profileSurname" name="surname"
+                                   value="{{ current_user.surname if current_user.is_authenticated else '' }}" disabled required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileEmail" class="form-label field-label-purple">Email</label>
+                            <input type="email" class="form-control" id="profileEmail" name="email"
+                                   value="{{ current_user.email if current_user.is_authenticated else '' }}" disabled required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileJobTitle" class="form-label field-label-purple">Job Title</label>
+                            <input type="text" class="form-control" id="profileJobTitle" name="job_title"
+                                   value="{{ current_user.job_title if current_user.is_authenticated else '' }}" disabled required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileTelephone" class="form-label field-label-purple">Telephone</label>
+                            <input type="tel" class="form-control" id="profileTelephone" name="telephone"
+                                   value="{{ current_user.telephone if current_user.is_authenticated and current_user.telephone else '' }}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label field-label-purple">Role</label>
+                            <input type="text" class="form-control"
+                                   value="{% if current_user.is_authenticated %}{% if current_user.is_admin() %}Admin{% else %}Non-Admin{% endif %}{% endif %}"
+                                   disabled readonly>
+                        </div>
+                        <div id="profileMessage" class="alert" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer" id="profileFooterView">
+                    <button type="button" class="btn btn-warning" onclick="enableProfileEdit()">Edit Details</button>
+                </div>
+                <div class="modal-footer" id="profileFooterEdit" style="display: none;">
+                    <button type="button" class="btn btn-warning" onclick="cancelProfileEdit()">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="saveProfile()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Delete Account</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you wish to delete your account?</p>
+                    <p class="text-muted small">This action will log you out and you will no longer be able to access the system.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="confirmDeleteAccount()">Yes, delete my account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div class="modal fade" id="approvalModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header modal-header-band">
+                    <h5 class="modal-title">Review Registration Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="approvalModalName"></p>
+                    <p id="approvalModalEmail"></p>
+                    <p id="approvalModalDate"></p>
+                    <input type="hidden" id="approvalUserId" value="">
+                    <div id="approvalModalMessage" class="alert" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="approvalAcceptBtn" onclick="handleApproval('approve')">Accept</button>
+                    <button type="button" class="btn btn-danger" id="approvalRejectBtn" onclick="handleApproval('reject')">Reject</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    let originalProfileData = {};
+
+    function enableProfileEdit() {
+        originalProfileData = {
+            forename: document.getElementById('profileForename').value,
+            surname: document.getElementById('profileSurname').value,
+            email: document.getElementById('profileEmail').value,
+            job_title: document.getElementById('profileJobTitle').value,
+            telephone: document.getElementById('profileTelephone').value
+        };
+
+        document.getElementById('profileForename').disabled = false;
+        document.getElementById('profileSurname').disabled = false;
+        document.getElementById('profileEmail').disabled = false;
+        document.getElementById('profileJobTitle').disabled = false;
+        document.getElementById('profileTelephone').disabled = false;
+
+        document.getElementById('profileFooterView').style.display = 'none';
+        document.getElementById('profileFooterEdit').style.display = 'flex';
+    }
+
+    function cancelProfileEdit() {
+        document.getElementById('profileForename').value = originalProfileData.forename;
+        document.getElementById('profileSurname').value = originalProfileData.surname;
+        document.getElementById('profileEmail').value = originalProfileData.email;
+        document.getElementById('profileJobTitle').value = originalProfileData.job_title;
+        document.getElementById('profileTelephone').value = originalProfileData.telephone;
+
+        document.getElementById('profileForename').disabled = true;
+        document.getElementById('profileSurname').disabled = true;
+        document.getElementById('profileEmail').disabled = true;
+        document.getElementById('profileJobTitle').disabled = true;
+        document.getElementById('profileTelephone').disabled = true;
+
+        document.getElementById('profileFooterView').style.display = 'flex';
+        document.getElementById('profileFooterEdit').style.display = 'none';
+        document.getElementById('profileMessage').style.display = 'none';
+    }
+
+    function saveProfile() {
+        const formData = new FormData(document.getElementById('editProfileForm'));
+        const messageDiv = document.getElementById('profileMessage');
+
+        fetch('{{ url_for("update_profile") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.className = 'alert alert-success';
+                messageDiv.textContent = data.message;
+                messageDiv.style.display = 'block';
+
+                document.getElementById('profileForename').disabled = true;
+                document.getElementById('profileSurname').disabled = true;
+                document.getElementById('profileEmail').disabled = true;
+                document.getElementById('profileJobTitle').disabled = true;
+                document.getElementById('profileTelephone').disabled = true;
+
+                document.getElementById('profileFooterView').style.display = 'flex';
+                document.getElementById('profileFooterEdit').style.display = 'none';
+
+                const newForename = document.getElementById('profileForename').value;
+                document.getElementById('userDropdown').textContent = 'Welcome, ' + newForename;
+
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                }, 2000);
+            } else {
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.textContent = data.message;
+                messageDiv.style.display = 'block';
+            }
+        });
+    }
+
+    function confirmDeleteAccount() {
+        fetch('{{ url_for("delete_account") }}', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal')).hide();
+                alert('Your account has been deleted successfully. You will now be logged out.');
+                window.location.href = '{{ url_for("login") }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+    </script>
+
+    {% block scripts %}{% endblock %}
+
+    {% if current_user.is_authenticated and current_user.is_admin() %}
+    <script>
+    (function() {
+        const bellBtn = document.getElementById('notificationBellBtn');
+        const dropdown = document.getElementById('notificationDropdown');
+        const badge = document.getElementById('notificationBadge');
+
+        // Listen for Bootstrap dropdown show event on the bell button
+        bellBtn.addEventListener('show.bs.dropdown', function() {
+            fetchNotifications();
+        });
+
+        function fetchNotifications() {
+            fetch('/admin/notifications')
+                .then(response => response.json())
+                .then(notifications => {
+                    dropdown.innerHTML = '';
+                    if (notifications.length === 0) {
+                        dropdown.innerHTML = '<li><span class="notification-empty">No pending requests</span></li>';
+                    } else {
+                        notifications.forEach(n => {
+                            const li = document.createElement('li');
+                            li.innerHTML =
+                                '<a class="dropdown-item notification-item" href="#" data-user-id="' + n.id + '" onclick="openApprovalModal(event)">' +
+                                    '<span class="notification-name">' + n.forename + ' ' + n.surname + '</span>' +
+                                    '<span class="notification-email">' + n.email + '</span>' +
+                                    '<span class="notification-date">Registered: ' + n.registered_date + '</span>' +
+                                '</a>';
+                            dropdown.appendChild(li);
+                        });
+                    }
+                })
+                .catch(err => console.error('Failed to fetch notifications:', err));
+        }
+
+        function openApprovalModal(event) {
+            event.preventDefault();
+            const item = event.currentTarget;
+            const userId = item.dataset.userId;
+            const name = item.querySelector('.notification-name').textContent;
+            const email = item.querySelector('.notification-email').textContent;
+            const date = item.querySelector('.notification-date').textContent;
+
+            document.getElementById('approvalUserId').value = userId;
+            document.getElementById('approvalModalName').textContent = 'Name: ' + name;
+            document.getElementById('approvalModalEmail').textContent = 'Email: ' + email;
+            document.getElementById('approvalModalDate').textContent = date;
+
+            const msgDiv = document.getElementById('approvalModalMessage');
+            msgDiv.style.display = 'none';
+            msgDiv.className = 'alert';
+            msgDiv.textContent = '';
+
+            // Enable buttons in case they were disabled after a previous action
+            document.getElementById('approvalAcceptBtn').disabled = false;
+            document.getElementById('approvalRejectBtn').disabled = false;
+
+            // Close the dropdown first, then show modal
+            bootstrap.Dropdown.getInstance(bellBtn).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('approvalModal')).show();
+        }
+
+        // Expose to global scope for onclick attributes
+        window.openApprovalModal = openApprovalModal;
+
+        window.handleApproval = function(action) {
+            const userId = document.getElementById('approvalUserId').value;
+            const msgDiv = document.getElementById('approvalModalMessage');
+
+            // Disable buttons to prevent double-click
+            document.getElementById('approvalAcceptBtn').disabled = true;
+            document.getElementById('approvalRejectBtn').disabled = true;
+
+            fetch('/admin/notifications/' + action + '/' + userId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    msgDiv.className = 'alert alert-success';
+                    msgDiv.textContent = data.message;
+                    msgDiv.style.display = 'block';
+
+                    setTimeout(() => {
+                        // Close the modal
+                        bootstrap.Modal.getInstance(document.getElementById('approvalModal')).hide();
+
+                        // Remove the item from the dropdown
+                        const items = dropdown.querySelectorAll('[data-user-id="' + userId + '"]');
+                        items.forEach(el => el.closest('li').remove());
+
+                        // If dropdown is now empty, show placeholder
+                        if (dropdown.querySelectorAll('.notification-item').length === 0) {
+                            dropdown.innerHTML = '<li><span class="notification-empty">No pending requests</span></li>';
+                        }
+
+                        // Update badge
+                        updateBadge();
+                    }, 1500);
+                } else {
+                    msgDiv.className = 'alert alert-danger';
+                    msgDiv.textContent = data.message;
+                    msgDiv.style.display = 'block';
+                    document.getElementById('approvalAcceptBtn').disabled = false;
+                    document.getElementById('approvalRejectBtn').disabled = false;
+                }
+            })
+            .catch(err => {
+                msgDiv.className = 'alert alert-danger';
+                msgDiv.textContent = 'An error occurred. Please try again.';
+                msgDiv.style.display = 'block';
+                document.getElementById('approvalAcceptBtn').disabled = false;
+                document.getElementById('approvalRejectBtn').disabled = false;
+            });
+        };
+
+        function updateBadge() {
+            fetch('/admin/notifications')
+                .then(response => response.json())
+                .then(notifications => {
+                    const count = notifications.length;
+                    if (count > 0) {
+                        if (!badge) {
+                            // Badge element doesn't exist yet, create it
+                            const newBadge = document.createElement('span');
+                            newBadge.className = 'notification-badge';
+                            newBadge.id = 'notificationBadge';
+                            newBadge.textContent = count;
+                            bellBtn.appendChild(newBadge);
+                        } else {
+                            badge.textContent = count;
+                            badge.style.display = 'flex';
+                        }
+                    } else {
+                        if (badge) {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
+        }
+    })();
+    </script>
+    {% endif %}
+</body>
+</html>

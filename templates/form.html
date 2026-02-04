@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Record{% endblock %}
+
+{% block content %}
+<h1>{{ action }} Apprentice Record</h1>
+
+<form method="POST" class="mt-4">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="ace360_id" class="form-label">ACE360 ID *</label>
+            <input type="number" class="form-control" id="ace360_id" name="ace360_id"
+                   value="{{ record.ace360_id if record else '' }}" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status">
+                <option value="">-- Select Status --</option>
+                {% for status_opt in status_options %}
+                <option value="{{ status_opt }}" {% if record and record.status == status_opt %}selected{% endif %}>{{ status_opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <h4 class="mt-4 mb-3">EPA Timeline</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="gateway_submitted" class="form-label">Gateway Submitted</label>
+            <input type="date" class="form-control" id="gateway_submitted" name="gateway_submitted"
+                   value="{{ record.gateway_submitted if record and record.gateway_submitted else '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="approved_for_epa" class="form-label">EPA Ready Date</label>
+            <input type="date" class="form-control" id="approved_for_epa" name="approved_for_epa"
+                   value="{{ record.approved_for_epa if record and record.approved_for_epa else '' }}">
+        </div>
+    </div>
+
+    <h4 class="mt-4 mb-3">Project Dates</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="project_start_date" class="form-label">Project Start Date</label>
+            <input type="date" class="form-control" id="project_start_date" name="project_start_date"
+                   value="{{ record.project_start_date if record and record.project_start_date else '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="project_deadline_date" class="form-label">Project Deadline Date</label>
+            <input type="date" class="form-control" id="project_deadline_date" name="project_deadline_date"
+                   value="{{ record.project_deadline_date if record and record.project_deadline_date else '' }}">
+        </div>
+    </div>
+
+    <h4 class="mt-4 mb-3">Attempt Dates</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="first_attempt_date" class="form-label">First Attempt Date</label>
+            <input type="date" class="form-control" id="first_attempt_date" name="first_attempt_date"
+                   value="{{ record.first_attempt_date if record and record.first_attempt_date else '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="second_attempt_date" class="form-label">Second Attempt Date (Optional)</label>
+            <input type="date" class="form-control" id="second_attempt_date" name="second_attempt_date"
+                   value="{{ record.second_attempt_date if record and record.second_attempt_date else '' }}">
+        </div>
+    </div>
+
+    <h4 class="mt-4 mb-3">Grading</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="overall_grade" class="form-label">Overall Grade</label>
+            <select class="form-select" id="overall_grade" name="overall_grade">
+                <option value="">-- Select Grade --</option>
+                <option value="Distinction" {% if record and record.overall_grade == 'Distinction' %}selected{% endif %}>Distinction</option>
+                <option value="Merit" {% if record and record.overall_grade == 'Merit' %}selected{% endif %}>Merit</option>
+                <option value="Pass" {% if record and record.overall_grade == 'Pass' %}selected{% endif %}>Pass</option>
+                <option value="Fail" {% if record and record.overall_grade == 'Fail' %}selected{% endif %}>Fail</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="grade_date" class="form-label">Grade Date</label>
+            <input type="date" class="form-control" id="grade_date" name="grade_date"
+                   value="{{ record.grade_date if record and record.grade_date else '' }}">
+        </div>
+    </div>
+
+    {% if record %}
+    <div class="card mt-4 mb-4">
+        <div class="card-header">
+            <strong>Auto-Calculated Fields</strong>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Variance (Days):</strong>
+                    {% if record.variance_days is not none %}
+                        <span class="badge {% if record.variance_days <= 0 %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                            {{ record.variance_days }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">N/A (requires First Attempt & Project Deadline dates)</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <strong>Within EPA Window:</strong>
+                    {% if record.within_epa_window %}
+                        <span class="badge {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ record.within_epa_window }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">N/A (requires Grade Date & Approved for EPA dates)</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Record</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

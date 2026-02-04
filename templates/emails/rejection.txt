@@ -1,0 +1,10 @@
+Hello {{ forename }},
+
+Thank you for your interest in DA1.1 Tracker.
+
+Your registration request has been reviewed and, unfortunately, has not been approved at this time.
+
+If you have any questions or believe this is an error, please contact your administrator.
+
+Best regards,
+DA1.1 Tracker Team

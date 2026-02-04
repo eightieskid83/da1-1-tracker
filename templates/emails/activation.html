@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate Your DA1.1 Tracker Account</title>
+</head>
+<body style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; background-color: #edecf6; margin: 0; padding: 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #edecf6; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(13, 0, 77, 0.15);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #0d004d; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">DA1.1 Tracker</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="color: #0d004d; font-size: 22px; font-weight: 600; margin-top: 0;">Hello {{ forename }},</h2>
+
+                            <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                Welcome to DA1.1 Tracker! We're excited to have you on board.
+                            </p>
+
+                            <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                To complete your registration, please activate your account by clicking the button below:
+                            </p>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ activation_url }}" style="background-color: #ffce00; color: #0d004d; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Activate Account</a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                                Or copy and paste this link into your browser:
+                            </p>
+                            <p style="color: #512eab; font-size: 14px; word-break: break-all;">
+                                {{ activation_url }}
+                            </p>
+
+                            <p style="color: #666; font-size: 14px; line-height: 1.6; margin-top: 30px;">
+                                <strong>Important:</strong> This activation link will expire in 48 hours. If you don't activate your account within this time, you'll need to use the "Forgot password" option to reactivate.
+                            </p>
+
+                            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                                If you did not create this account, please ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 20px 30px; border-radius: 0 0 12px 12px; text-align: center;">
+                            <p style="color: #6c757d; font-size: 12px; margin: 0;">
+                                Best regards,<br>
+                                DA1.1 Tracker Team
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

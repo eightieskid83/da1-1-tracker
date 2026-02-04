@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold">Dashboard</h1>
+    <a href="{{ url_for('records') }}" class="btn btn-primary">View Apprentice Records</a>
+</div>
+
+<div class="row g-4">
+    <!-- Total Learners -->
+    <div class="col-md-4">
+        <a href="{{ url_for('records') }}" class="text-decoration-none">
+            <div class="card h-100 card-clickable">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Learners</h6>
+                    <h2 class="card-title display-4 fw-bold text-primary">{{ metrics.total_learners }}</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Overall Pass Rate -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Overall Pass Rate</h6>
+                <h2 class="card-title display-4 fw-bold text-success">{{ metrics.pass_rate }}%</h2>
+                <small class="text-muted">Distinction + Merit + Pass</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Within 12 Week Window -->
+    <div class="col-md-4">
+        <div class="card h-100" data-bs-toggle="tooltip" data-bs-html="true"
+             title="<span class='text-success'>Within 12 weeks: {{ metrics.within_window_pct }}%</span><br><span class='text-danger'>Beyond 12 weeks: {{ metrics.beyond_window_pct }}%</span>">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Completed Within 12 Weeks</h6>
+                <h2 class="card-title display-4 fw-bold" style="color: #512eab;">{{ metrics.within_window_pct }}%</h2>
+                <small class="text-muted">of graded assessments</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- First Attempts Within Window -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">First Attempts Booked Within Window</h6>
+                <h2 class="card-title display-4 fw-bold" style="color: #0d004d;">{{ metrics.first_attempt_in_window_pct }}%</h2>
+                <small class="text-muted">within 12-week EPA window</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Days to Complete -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Average Days to Complete</h6>
+                <h2 class="card-title display-4 fw-bold text-info">{{ metrics.avg_days_within_window }}%</h2>
+                <small class="text-muted">of 12-week window used</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gateway Approval -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Gateway Approval</h6>
+                <h2 class="card-title display-4 fw-bold" style="color: #198754;">{{ metrics.gateway_approval_pct }}%</h2>
+                <small class="text-muted">approved within 5 working days</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Distribution Card -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3 text-muted text-center">Grade Distribution</h6>
+                <div class="d-flex flex-column gap-2">
+                    <a href="{{ url_for('records', grade='Distinction') }}" class="text-decoration-none grade-row d-flex justify-content-between align-items-center p-2 rounded">
+                        <span class="badge bg-success">Distinction</span>
+                        <span class="fw-bold text-dark">{{ metrics.grade_dist.distinction }}%</span>
+                    </a>
+                    <a href="{{ url_for('records', grade='Merit') }}" class="text-decoration-none grade-row d-flex justify-content-between align-items-center p-2 rounded">
+                        <span class="badge bg-primary">Merit</span>
+                        <span class="fw-bold text-dark">{{ metrics.grade_dist.merit }}%</span>
+                    </a>
+                    <a href="{{ url_for('records', grade='Pass') }}" class="text-decoration-none grade-row d-flex justify-content-between align-items-center p-2 rounded">
+                        <span class="badge bg-secondary">Pass</span>
+                        <span class="fw-bold text-dark">{{ metrics.grade_dist.pass }}%</span>
+                    </a>
+                    <a href="{{ url_for('records', grade='Fail') }}" class="text-decoration-none grade-row d-flex justify-content-between align-items-center p-2 rounded">
+                        <span class="badge bg-danger">Fail</span>
+                        <span class="fw-bold text-dark">{{ metrics.grade_dist.fail }}%</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}

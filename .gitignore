@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Flask instance folder (contains database)
+instance/
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp

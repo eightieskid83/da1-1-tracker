@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}All Records{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Apprentice Records: Data Analyst</h1>
+        {% if active_filters %}
+        <div class="mt-2">
+            {% for key, value in active_filters.items() %}
+            <span class="badge bg-primary fs-6 me-1">
+                {{ key|replace('_', ' ')|title }}: {{ value }}
+                <a href="{{ url_for('records', **dict(active_filters.items()|list|rejectattr('0', 'eq', key)|list)) }}" class="text-white ms-1" style="text-decoration: none;">&times;</a>
+            </span>
+            {% endfor %}
+            <a href="{{ url_for('records') }}" class="btn btn-sm btn-outline-secondary ms-2">Clear all filters</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-filter" data-bs-toggle="modal" data-bs-target="#filterModal">
+            Filters
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Export
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('export_pdf') }}">PDF</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('export_xlsx') }}">XLSX</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('export_csv') }}">CSV</a></li>
+            </ul>
+        </div>
+        <button type="button" class="btn btn-upload"
+                {% if not current_user.is_admin() %}disabled{% endif %}
+                {% if current_user.is_admin() %}data-bs-toggle="modal" data-bs-target="#uploadModal"{% endif %}
+                {% if not current_user.is_admin() %}data-bs-toggle="tooltip" data-bs-placement="bottom"
+                title="Admin access required to access these features, please contact local administrator."{% endif %}>
+            Upload
+        </button>
+
+        <a href="{{ url_for('add_record') }}"
+           class="btn btn-success {% if not current_user.is_admin() %}disabled{% endif %}"
+           {% if not current_user.is_admin() %}data-bs-toggle="tooltip" data-bs-placement="bottom"
+           title="Admin access required to access these features, please contact local administrator."
+           aria-disabled="true" onclick="event.preventDefault();"{% endif %}>
+            Add New Record
+        </a>
+    </div>
+</div>
+
+{% if records %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ACE360 ID</th>
+                <th>Status</th>
+                <th>Gateway Submitted</th>
+                <th>EPA Ready Date</th>
+                <th>Project Deadline</th>
+                <th>First Attempt</th>
+                <th>Variance (Days)</th>
+                <th>Overall Grade</th>
+                <th>Within EPA Window</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.ace360_id }}</td>
+                <td>{{ record.status if record.status else '-' }}</td>
+                <td>{{ record.gateway_submitted if record.gateway_submitted else '-' }}</td>
+                <td>{{ record.approved_for_epa if record.approved_for_epa else '-' }}</td>
+                <td>{{ record.project_deadline_date if record.project_deadline_date else '-' }}</td>
+                <td>{{ record.first_attempt_date if record.first_attempt_date else '-' }}</td>
+                <td>
+                    {% if record.variance_days is not none %}
+                        <span class="badge {% if record.variance_days <= 0 %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                            {{ record.variance_days }}
+                        </span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="clickable-cell" onclick="window.location.href='{{ url_for('records', grade=record.overall_grade) }}'">
+                    {% if record.overall_grade %}
+                        {{ record.overall_grade }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="clickable-cell" onclick="window.location.href='{{ url_for('records', window=record.within_epa_window) }}'">
+                    {% if record.within_epa_window %}
+                        <span class="badge {% if record.within_epa_window == 'Yes' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ record.within_epa_window }}
+                        </span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('view_record', id=record.id) }}" class="btn btn-info">View</a>
+                        {% if current_user.is_admin() %}
+                            <a href="{{ url_for('edit_record', id=record.id) }}" class="btn btn-warning">Edit</a>
+                            <form action="{{ url_for('delete_record', id=record.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this record?');">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if pagination and pagination.total > 0 %}
+<div class="pagination-container d-flex justify-content-between align-items-center mt-3">
+    <div class="pagination-info">
+        {% set start_item = (pagination.page - 1) * pagination.per_page + 1 %}
+        {% set end_item = [pagination.page * pagination.per_page, pagination.total]|min %}
+        Displaying {{ start_item }} to {{ end_item }} of {{ pagination.total }} items
+    </div>
+    <div class="pagination-controls d-flex align-items-center gap-2">
+        <a href="{{ url_for('records', page=1, **active_filters) }}" class="btn btn-pagination{% if pagination.page == 1 %} disabled{% endif %}">|&lt;</a>
+        <a href="{{ url_for('records', page=pagination.prev_num, **active_filters) if pagination.has_prev else '#' }}" class="btn btn-pagination{% if not pagination.has_prev %} disabled{% endif %}">&lt;</a>
+        <span class="pagination-text">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        <a href="{{ url_for('records', page=pagination.next_num, **active_filters) if pagination.has_next else '#' }}" class="btn btn-pagination{% if not pagination.has_next %} disabled{% endif %}">&gt;</a>
+        <a href="{{ url_for('records', page=pagination.pages, **active_filters) }}" class="btn btn-pagination{% if pagination.page == pagination.pages %} disabled{% endif %}">&gt;|</a>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    No records found. <a href="{{ url_for('add_record') }}">Add your first record</a>.
+</div>
+{% endif %}
+
+<!-- Filter Modal -->
+<div class="modal fade filter-modal" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filters</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="GET" action="{{ url_for('records') }}" id="filterForm">
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select class="form-select" id="statusFilter" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="In Training" {% if active_filters.get('status') == 'In Training' %}selected{% endif %}>In Training</option>
+                                <option value="Gateway in Progress" {% if active_filters.get('status') == 'Gateway in Progress' %}selected{% endif %}>Gateway in Progress</option>
+                                <option value="Gateway Evidence Complete" {% if active_filters.get('status') == 'Gateway Evidence Complete' %}selected{% endif %}>Gateway Evidence Complete</option>
+                                <option value="Gateway Submitted" {% if active_filters.get('status') == 'Gateway Submitted' %}selected{% endif %}>Gateway Submitted</option>
+                                <option value="Denied EPA" {% if active_filters.get('status') == 'Denied EPA' %}selected{% endif %}>Denied EPA</option>
+                                <option value="Approved for EPA" {% if active_filters.get('status') == 'Approved for EPA' %}selected{% endif %}>Approved for EPA</option>
+                                <option value="EPA in Progress" {% if active_filters.get('status') == 'EPA in Progress' %}selected{% endif %}>EPA in Progress</option>
+                                <option value="EPA Evidence Complete" {% if active_filters.get('status') == 'EPA Evidence Complete' %}selected{% endif %}>EPA Evidence Complete</option>
+                                <option value="EPA Failed" {% if active_filters.get('status') == 'EPA Failed' %}selected{% endif %}>EPA Failed</option>
+                                <option value="EPA Passed" {% if active_filters.get('status') == 'EPA Passed' %}selected{% endif %}>EPA Passed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="gradeFilter" class="form-label">Overall Grade</label>
+                            <select class="form-select" id="gradeFilter" name="grade">
+                                <option value="">All Grades</option>
+                                <option value="Distinction" {% if active_filters.get('grade') == 'Distinction' %}selected{% endif %}>Distinction</option>
+                                <option value="Merit" {% if active_filters.get('grade') == 'Merit' %}selected{% endif %}>Merit</option>
+                                <option value="Pass" {% if active_filters.get('grade') == 'Pass' %}selected{% endif %}>Pass</option>
+                                <option value="Fail" {% if active_filters.get('grade') == 'Fail' %}selected{% endif %}>Fail</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="windowFilter" class="form-label">Within EPA Window</label>
+                            <select class="form-select" id="windowFilter" name="window">
+                                <option value="">All</option>
+                                <option value="Yes" {% if active_filters.get('window') == 'Yes' %}selected{% endif %}>Yes</option>
+                                <option value="No" {% if active_filters.get('window') == 'No' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="date-range-header">Date Range Filters</div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Gateway Submitted</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="gateway_from" value="{{ active_filters.get('gateway_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="gateway_to" value="{{ active_filters.get('gateway_to', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">EPA Ready Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="approved_from" value="{{ active_filters.get('approved_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="approved_to" value="{{ active_filters.get('approved_to', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Project Start</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="project_start_from" value="{{ active_filters.get('project_start_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="project_start_to" value="{{ active_filters.get('project_start_to', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Project Deadline</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="deadline_from" value="{{ active_filters.get('deadline_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="deadline_to" value="{{ active_filters.get('deadline_to', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Attempt</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="first_attempt_from" value="{{ active_filters.get('first_attempt_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="first_attempt_to" value="{{ active_filters.get('first_attempt_to', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Second Attempt</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="second_attempt_from" value="{{ active_filters.get('second_attempt_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="second_attempt_to" value="{{ active_filters.get('second_attempt_to', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Grade Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text">From</span>
+                                <input type="date" class="form-control" name="grade_date_from" value="{{ active_filters.get('grade_date_from', '') }}">
+                                <span class="input-group-text">To</span>
+                                <input type="date" class="form-control" name="grade_date_to" value="{{ active_filters.get('grade_date_to', '') }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-filter" id="resetFilters">Reset</button>
+                    <button type="submit" class="btn btn-filter">OK &amp; Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_admin() %}
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Upload Records</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('upload_records') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Upload a CSV or XLSX file to import new records. Existing records (matching ACE360 ID) will be skipped.</p>
+                    <div class="mb-3">
+                        <label for="uploadFile" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="uploadFile" name="file" accept=".csv,.xlsx" required>
+                    </div>
+                    <div class="small text-muted">
+                        <strong>Expected columns:</strong> ACE360 ID, Status, Gateway Submitted Date, EPA Ready Date, Project Start Date, Project Deadline, First Attempt Booking Date, Second Attempt Booking Date, Overall Grade, Grade Date
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-upload">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.getElementById('resetFilters').addEventListener('click', function() {
+    const form = document.getElementById('filterForm');
+    // Reset all select elements to first option
+    form.querySelectorAll('select').forEach(function(select) {
+        select.selectedIndex = 0;
+    });
+    // Clear all date inputs
+    form.querySelectorAll('input[type="date"]').forEach(function(input) {
+        input.value = '';
+    });
+});
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+</script>
+{% endblock %}
