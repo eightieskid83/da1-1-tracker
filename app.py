@@ -252,6 +252,38 @@ def update_profile():
         return jsonify({'success': False, 'message': 'An error occurred.'}), 500
 
 
+@app.route('/profile/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Change user password."""
+    try:
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        # Validate current password
+        if not current_user.check_password(current_password):
+            return jsonify({'success': False, 'message': 'Current password is incorrect.'}), 400
+
+        # Validate new password matches confirmation
+        if new_password != confirm_password:
+            return jsonify({'success': False, 'message': 'New passwords do not match.'}), 400
+
+        # Validate password length
+        if len(new_password) < 8:
+            return jsonify({'success': False, 'message': 'Password must be at least 8 characters long.'}), 400
+
+        # Update password
+        current_user.set_password(new_password)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Password changed successfully!'}), 200
+
+    except Exception as e:
+        print(f"Password change error: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred.'}), 500
+
+
 @app.route('/profile/delete', methods=['POST'])
 @login_required
 def delete_account():
