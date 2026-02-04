@@ -21,14 +21,15 @@ def init_db(app):
     with app.app_context():
         db.create_all()
 
-        # Create default admin user if no users exist
+        # Create or update default admin user
         from models import User
-        if User.query.count() == 0:
+        admin = User.query.filter_by(username='admin').first()
+        if admin is None:
             admin = User(
                 username='admin',
-                email='admin@example.com',
-                forename='Admin',
-                surname='User',
+                email='chris.oley@outlook.com',
+                forename='Chris',
+                surname='Oley',
                 job_title='Administrator',
                 telephone=None,
                 user_created_date=datetime.now(),
@@ -40,3 +41,9 @@ def init_db(app):
             db.session.add(admin)
             db.session.commit()
             print("Default admin user created (admin/admin123)")
+        elif admin.email != 'chris.oley@outlook.com':
+            admin.email = 'chris.oley@outlook.com'
+            admin.forename = 'Chris'
+            admin.surname = 'Oley'
+            db.session.commit()
+            print("Admin user email updated to chris.oley@outlook.com")
